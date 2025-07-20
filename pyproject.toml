@@ -1,0 +1,30 @@
+[project]
+name = "MystoganBot"
+version = "0.1.0"
+description = "Bot for playlist of discord"
+authors = [
+    {name = "Oscar Figueira", email = "omfr.13@gmail.com"},
+]
+dependencies = [
+    "discord>=2.3.2", 
+    "yt-dlp>=2025.6.30", 
+    "asyncio>=3.4.3", 
+    "PyNaCl>=1.5.0", 
+    "imageio-ffmpeg>=0.6.0", 
+    "pydantic>=2.11.7", 
+    "dependency-injector>=4.48.1"
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.scripts]
+start = "python -m src.infraestructure.system.app"

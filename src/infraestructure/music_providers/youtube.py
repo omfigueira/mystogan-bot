@@ -69,20 +69,40 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
 
         # Si no está sonando nada, inicia la reproducción
         if not ctx.voice_client.is_playing():
+            self.logger.info("Iniciando reproducción de la primera canción en la cola.") 
+            if self.discord_repository.actual_actions.get(guild_id) != 'bucle':
+                self.discord_repository.actual_actions[guild_id] = 'skip'
             self._play_next(ctx)
 
+    def _get_song_info(self, action: str, guild_id: str):
+        self.logger.info(f"Obteniendo información de la canción para la acción: {action} en el servidor: {guild_id}")
+        if action == 'bucle':
+            return self.discord_repository.history[guild_id][-1]
+        elif action == 'skip':
+            info_song = self.discord_repository.queues[guild_id].pop(0)
+            if not self.discord_repository.history.get(guild_id):
+                self.discord_repository.history[guild_id] = []
+            self.discord_repository.history[guild_id].append(info_song)
+            return info_song
+        elif action == 'back':
+            info_song = self.discord_repository.history[guild_id].pop(-1)
+            self.discord_repository.queues[guild_id].insert(0, info_song)
+            return self.discord_repository.history[guild_id][-1]
+
     def _play_next(self, ctx: commands.Context):
+        self.logger.info("Reproduciendo la siguiente canción en la cola.")
         guild_id = ctx.guild.id
         vc = ctx.voice_client
         if not vc: return
 
         if self.discord_repository.queues.get(guild_id):
-            song_info = self.discord_repository.queues[guild_id].pop(0)
-            if not guild_id in self.discord_repository.history:
-                self.discord_repository.history[guild_id] = []
+            self.logger.info(f"Cola de reproducción para {ctx.guild.name}: {len(self.discord_repository.queues[guild_id])} canciones.")
+            song_info = self._get_song_info(self.discord_repository.actual_actions.get(guild_id, 'skip'), guild_id)
+            self.logger.info(f"Reproduciendo canción _get_song_info: {song_info['title']}")
 
-            self.discord_repository.history[guild_id].append(song_info)
-
+            if not song_info:
+                self.logger.info("No hay más canciones en la cola. Desconectando.")
+                return asyncio.run_coroutine_threadsafe(self.discord_repository.cleanup(ctx.guild), self.bot.loop)
             # --- LÓGICA DE CARGA PEREZOSA ---
             # Ahora buscamos los detalles completos justo antes de reproducir
             self.logger.info(f"Carga perezosa: Obteniendo detalles para '{song_info['title']}'...")
@@ -157,7 +177,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
                     lines.append(f"**{initial + i + 1}** {title}")
 
             # 5. Calcula cuántas canciones más quedan y añade el pie de página si es necesario.
-            remaining_count = finish - len(combined_list)
+            remaining_count = len(combined_list) - finish 
             if remaining_count > 0:
                 lines.append(f"\n... y {remaining_count} más.")
 
@@ -166,6 +186,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
 
         embed.add_field(name="🎼 Cola de Reproducción", value=queue_list)
         view_info = self.discord_repository.current_views.get(guild_id)
+
         if view_info:
             try:
                 msg = await view_info['channel'].fetch_message(view_info['message_id'])
@@ -180,6 +201,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
     def _handle_after_play(self, error, ctx):
         if error:
             self.logger.error(f"Error después de reproducir: {error}")
+        self.logger.info("Reproducción finalizada, buscando la siguiente canción en la cola.")
         self._play_next(ctx)
 
     def _search_and_extract(self, search: str):

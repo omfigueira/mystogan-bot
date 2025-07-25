@@ -5,7 +5,7 @@ async def main():
     container = Container()
     container.wire(packages=["src.infraestructure"])
 
-    container.config.BOT_DISCORD_TOKEN.from_env('BOT_DISCORD_TOKEN', required=True)
+    container.config.BOT_DISCORD_TOKEN.from_env('BOT_DISCORD_TOKEN',default='MTM5NjIzMDEyODc2OTQzMzcwMw.G8uXt7.XHHARUjfwsAzyvVaESax6fhvLYZImAp-kv5bqA', required=True)
     
     bot = container.bot()
     logger = container.logger()

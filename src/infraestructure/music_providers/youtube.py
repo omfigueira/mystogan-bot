@@ -212,7 +212,8 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
             'default_search': 'ytmsearch',
             'quiet': True,
             'no_warnings': True,
-            'extract_flat': 'in_playlist'
+            'extract_flat': 'in_playlist',
+            'cookiefile': 'cookies.txt',  # Si tienes cookies, puedes usarlas aquí
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
@@ -231,6 +232,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
+            'cookiefile': 'cookies.txt',  # Si tienes cookies, puedes usarlas aquí
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             for i, entry in enumerate(entries):

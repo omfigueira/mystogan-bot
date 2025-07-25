@@ -1,7 +1,10 @@
 import logging
 import discord
+from dotenv import load_dotenv
 from discord.ext import commands
 from dependency_injector import containers, providers
+
+load_dotenv()
 
 def setup_logger():
     """Función para configurar y devolver una única instancia del logger."""

@@ -32,7 +32,8 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
         # Opciones para una búsqueda inicial muy rápida (flat extraction)
         ydl_opts = {
             'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True,
-            'default_search': 'ytmsearch', 'extract_flat': 'in_playlist'
+            'default_search': 'ytmsearch', 'extract_flat': 'in_playlist',
+            'cookiefile': self.cookie_file_path
         }
         
         loop = asyncio.get_event_loop()
@@ -111,7 +112,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
             # Ahora buscamos los detalles completos justo antes de reproducir
             self.logger.info(f"Carga perezosa: Obteniendo detalles para '{song_info['title']}'...")
             try:
-                ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True}
+                ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'no_warnings': True, 'cookiefile': self.cookie_file_path}
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     detailed_info = ydl.extract_info(song_info.get('webpage_url') or song_info.get('id'), download=False)
             except Exception as e:

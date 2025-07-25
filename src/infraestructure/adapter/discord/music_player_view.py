@@ -27,7 +27,7 @@ class MusicPlayerView(discord.ui.View):
         await interaction.response.send_message("Debes estar en el mismo canal de voz que el bot.", ephemeral=True)
         return False
 
-    @discord.ui.button(label="Pausa", style=discord.ButtonStyle.secondary, custom_id="pause_resume", emoji="⏯️")
+    @discord.ui.button(label="Pausa", style=discord.ButtonStyle.secondary, custom_id="pause_resume", emoji="⏯️", row=0)
     async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = self.ctx.voice_client
         if vc.is_playing():
@@ -40,11 +40,32 @@ class MusicPlayerView(discord.ui.View):
             self.logger.info(f"Música reanudada por {interaction.user}.")
         await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(label="Retroceder", style=discord.ButtonStyle.primary, custom_id="back", emoji="⏪", disabled=True)
+    @discord.ui.button(label="Bucle", style=discord.ButtonStyle.primary, emoji="🔁", row=1)
+    async def repeat(self, interaction: discord.Interaction, button: discord.ui.Button):
+        vc = self.ctx.voice_client
+        if self.discord_repository.actual_actions[self.ctx.guild.id] == 'bucle':
+            self.discord_repository.actual_actions[self.ctx.guild.id] = 'skip'
+            button.style = discord.ButtonStyle.primary
+        else:
+            self.discord_repository.actual_actions[self.ctx.guild.id] = 'bucle'
+            button.style = discord.ButtonStyle.success
+        if vc and (vc.is_playing() or vc.is_paused()):
+            await interaction.response.defer()
+            vc.stop()
+            self.logger.info(f"Canción retrocedida por {interaction.user}.")
+            await interaction.response.send_message("Canción retrocedida.", ephemeral=True)
+        else:
+            await interaction.response.send_message("No hay nada que retroceder. El bot se desconectara.", ephemeral=True)
+            await self.cog.cleanup(self.ctx.guild)
+
+    @discord.ui.button(label="Retroceder", style=discord.ButtonStyle.primary, emoji="⏪", row=0)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = self.ctx.voice_client
         
         if vc and (vc.is_playing() or vc.is_paused()):
+            if self.discord_repository.actual_actions.get(self.ctx.guild.id) == 'bucle':
+                await interaction.response.send_message("No se puede retroceder en modo bucle.", ephemeral=True)
+                return
             if len(self.discord_repository.history.get(self.ctx.guild.id)) < 2:
                 await interaction.response.send_message("No hay canciones para retroceder.", ephemeral=True)
                 return
@@ -57,10 +78,13 @@ class MusicPlayerView(discord.ui.View):
             await interaction.response.send_message("No hay nada que retroceder. El bot se desconectara.", ephemeral=True)
             await self.cog.cleanup(self.ctx.guild)
 
-    @discord.ui.button(label="Saltar", style=discord.ButtonStyle.primary, custom_id="skip", emoji="⏭️")
+    @discord.ui.button(label="Saltar", style=discord.ButtonStyle.primary, emoji="⏭️", row=0)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = self.ctx.voice_client
         if vc and (vc.is_playing() or vc.is_paused()):
+            if self.discord_repository.actual_actions.get(self.ctx.guild.id) == 'bucle':
+                await interaction.response.send_message("No se puede saltar en modo bucle.", ephemeral=True)
+                return
             await interaction.response.defer()
             self.discord_repository.actual_actions[self.ctx.guild.id] = 'skip'
             vc.stop()
@@ -69,7 +93,7 @@ class MusicPlayerView(discord.ui.View):
             await interaction.response.send_message("No hay nada que saltar. El bot se desconectara.", ephemeral=True)
             await self.cog.cleanup(self.ctx.guild)
 
-    @discord.ui.button(label="Detener", style=discord.ButtonStyle.danger, custom_id="stop", emoji="⏹️")
+    @discord.ui.button(label="Detener", style=discord.ButtonStyle.danger, emoji="⏹️", row=1)
     async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.logger.info(f"Reproducción detenida por {interaction.user}.")
         vc = self.ctx.voice_client

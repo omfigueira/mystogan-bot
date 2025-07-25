@@ -70,8 +70,24 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
         # Si no está sonando nada, inicia la reproducción
         if not ctx.voice_client.is_playing():
             self.logger.info("Iniciando reproducción de la primera canción en la cola.") 
-            self.discord_repository.actual_actions[guild_id] = 'skip'
+            if self.discord_repository.actual_actions.get(guild_id) != 'bucle':
+                self.discord_repository.actual_actions[guild_id] = 'skip'
             self._play_next(ctx)
+
+    def _get_song_info(self, action: str, guild_id: str):
+        self.logger.info(f"Obteniendo información de la canción para la acción: {action} en el servidor: {guild_id}")
+        if action == 'bucle':
+            return self.discord_repository.history[guild_id][-1]
+        elif action == 'skip':
+            info_song = self.discord_repository.queues[guild_id].pop(0)
+            if not self.discord_repository.history.get(guild_id):
+                self.discord_repository.history[guild_id] = []
+            self.discord_repository.history[guild_id].append(info_song)
+            return info_song
+        elif action == 'back':
+            info_song = self.discord_repository.history[guild_id].pop(-1)
+            self.discord_repository.queues[guild_id].insert(0, info_song)
+            return self.discord_repository.history[guild_id][-1]
 
     def _play_next(self, ctx: commands.Context):
         self.logger.info("Reproduciendo la siguiente canción en la cola.")
@@ -80,8 +96,9 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
         if not vc: return
 
         if self.discord_repository.queues.get(guild_id):
+            self.logger.info(f"Cola de reproducción para {ctx.guild.name}: {len(self.discord_repository.queues[guild_id])} canciones.")
             song_info = self._get_song_info(self.discord_repository.actual_actions.get(guild_id, 'skip'), guild_id)
-            self.logger.info(f"Reproduciendo canción: {song_info['title']}")
+            self.logger.info(f"Reproduciendo canción _get_song_info: {song_info['title']}")
 
             if not song_info:
                 self.logger.info("No hay más canciones en la cola. Desconectando.")
@@ -160,7 +177,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
                     lines.append(f"**{initial + i + 1}** {title}")
 
             # 5. Calcula cuántas canciones más quedan y añade el pie de página si es necesario.
-            remaining_count = finish - len(combined_list)
+            remaining_count = len(combined_list) - finish 
             if remaining_count > 0:
                 lines.append(f"\n... y {remaining_count} más.")
 

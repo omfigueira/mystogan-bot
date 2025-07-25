@@ -9,6 +9,7 @@ from src.infraestructure.adapter.discord.music_player_view import MusicPlayerVie
 from discord.ext import commands
 from imageio_ffmpeg import get_ffmpeg_exe
 from src.domain.music_providers.repository import MusicProviderRepository
+from pathlib import Path
 
 
 class YouTubeMusicProviderRepository(MusicProviderRepository):
@@ -22,6 +23,9 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
         self.bot = bot
         self.logger = logger
         self.discord_repository = discord_repository
+        project_root = Path(__file__).parent.parent.parent.parent
+        self.cookie_file_path = project_root / 'cookies.txt'
+        self.logger.info(f"Ruta de cookies configurada en: {self.cookie_file_path}")
         self.logger.info("YouTubeMusicProviderRepository inicializado.")
             
     async def play(self, ctx: commands.Context, query: str):
@@ -213,7 +217,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
             'quiet': True,
             'no_warnings': True,
             'extract_flat': 'in_playlist',
-            'cookiefile': 'cookies.txt',  # Si tienes cookies, puedes usarlas aquí
+            'cookiefile': self.cookie_file_path,  # Si tienes cookies, puedes usarlas aquí
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
@@ -232,7 +236,7 @@ class YouTubeMusicProviderRepository(MusicProviderRepository):
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
-            'cookiefile': 'cookies.txt',  # Si tienes cookies, puedes usarlas aquí
+            'cookiefile': self.cookie_file_path,  # Si tienes cookies, puedes usarlas aquí
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             for i, entry in enumerate(entries):

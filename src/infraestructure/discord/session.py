@@ -9,6 +9,7 @@ class SessionRepository(DiscordRepository):
         self.queues = {}
         self.current_views = {}
         self.history = {}
+        self.actual_actions = {}
         self.logger = logger
         self.logger.info("SessionRepository inicializado.")
 

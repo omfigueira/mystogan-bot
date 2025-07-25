@@ -86,7 +86,7 @@ class CommandView(commands.Cog, name="CommandView"):
     async def _get_provider(self, search: str) -> typing.Optional[MusicProviderRepository]:
         link = search.lower()
         self.logger.info(f"Buscando proveedor para el enlace: {link}")
-        if 'youtube' in link:
+        if 'youtube' in link or 'youtu.be' in link:
             self.logger.info("Proveedor de YouTube encontrado.")
             return self.music_provider['youtube']
         elif 'spotify' in link:

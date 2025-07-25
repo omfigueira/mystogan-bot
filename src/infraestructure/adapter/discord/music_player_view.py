@@ -43,7 +43,13 @@ class MusicPlayerView(discord.ui.View):
     @discord.ui.button(label="Retroceder", style=discord.ButtonStyle.primary, custom_id="back", emoji="⏪", disabled=True)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = self.ctx.voice_client
+        
         if vc and (vc.is_playing() or vc.is_paused()):
+            if len(self.discord_repository.history.get(self.ctx.guild.id)) < 2:
+                await interaction.response.send_message("No hay canciones para retroceder.", ephemeral=True)
+                return
+            await interaction.response.defer()
+            self.discord_repository.actual_actions[self.ctx.guild.id] = 'back'
             vc.stop()
             self.logger.info(f"Canción retrocedida por {interaction.user}.")
             await interaction.response.send_message("Canción retrocedida.", ephemeral=True)
@@ -56,6 +62,7 @@ class MusicPlayerView(discord.ui.View):
         vc = self.ctx.voice_client
         if vc and (vc.is_playing() or vc.is_paused()):
             await interaction.response.defer()
+            self.discord_repository.actual_actions[self.ctx.guild.id] = 'skip'
             vc.stop()
             self.logger.info(f"Canción saltada por {interaction.user}.")
         else:
@@ -65,5 +72,10 @@ class MusicPlayerView(discord.ui.View):
     @discord.ui.button(label="Detener", style=discord.ButtonStyle.danger, custom_id="stop", emoji="⏹️")
     async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.logger.info(f"Reproducción detenida por {interaction.user}.")
-        await self.discord_repository.cleanup(self.ctx.guild)
+        vc = self.ctx.voice_client
+        if vc:
+            await vc.disconnect()
+            await self.discord_repository.cleanup(self.ctx.guild)
+        else:
+            self.logger.warning("No hay un cliente de voz conectado.")
         await interaction.response.send_message("Música detenida y bot desconectado.", ephemeral=True)
